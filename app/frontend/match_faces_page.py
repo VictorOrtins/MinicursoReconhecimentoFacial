@@ -1,7 +1,10 @@
 import streamlit as st
 
-from backend.face_recognition.face_recognition_engine import FaceRecognitionEngine
 from backend.exceptions.multiple_faces_exception import MultipleFacesException
+from backend.exceptions.no_faces_exception import NoFacesException
+
+from backend.face_recognition.face_recognition_engine import FaceRecognitionEngine
+
 from backend.utils.image_utils import convert_img_to_array
 
 engine = FaceRecognitionEngine()
@@ -32,7 +35,7 @@ if st.button("Comparar Imagens"):
 
         try:
             result = engine.match_faces(np_image_1, np_image_2)
-        except MultipleFacesException as e:
+        except (MultipleFacesException, NoFacesException) as e:
             st.error(f"Erro: {e}")
             st.stop()
 

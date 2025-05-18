@@ -5,6 +5,7 @@ from deepface import DeepFace
 from deepface.modules.verification import find_cosine_distance
 
 from backend.exceptions.multiple_faces_exception import MultipleFacesException
+from backend.exceptions.no_faces_exception import NoFacesException
 
 
 class FaceRecognitionEngine:
@@ -21,9 +22,15 @@ class FaceRecognitionEngine:
         :return: True if the faces match, False otherwise.
         """
         # Detect faces in both images
-        detected_faces1 = self.__detect_faces(img1_bgr)
-        detected_faces2 = self.__detect_faces(img2_bgr)
-
+        try:
+            detected_faces1 = self.__detect_faces(img1_bgr)
+        except ValueError as e:
+            raise NoFacesException("A imagem 1 deve conter exatamente uma face.") from e
+        try:
+            detected_faces2 = self.__detect_faces(img2_bgr)
+        except ValueError as e:
+            raise NoFacesException("A imagem 2 deve conter exatamente uma face.") from e
+        
         if not self.__check_single_face_detected(detected_faces1):
             raise MultipleFacesException("A imagem 1 deve conter exatamente uma face.")
         
