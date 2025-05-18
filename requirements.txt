@@ -1,0 +1,6 @@
+streamlit==1.45.1
+opencv-contrib-python==4.11.0.86
+deepface==0.0.93
+tensorflow==2.19.0
+tf-keras==2.19.0
+numpy==2.13
