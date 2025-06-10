@@ -4,6 +4,14 @@ Este projeto utiliza Streamlit e DeepFace para criar uma aplicação de reconhec
 
 ---
 
+## Comandos necessários para rodar a aplicação:
+
+Dentro da pasta raiz do projeto, ou seja, a que possui app/, .gitignore, README.md e requirements.txt, rode:
+pip install -r requirements.txt
+sudo apt-get update
+sudo apt install libgl1
+
+
 ## main.py
 Arquivo principal da aplicação Streamlit para reconhecimento facial.
 
