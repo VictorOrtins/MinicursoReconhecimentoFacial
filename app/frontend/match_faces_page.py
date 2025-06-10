@@ -1,45 +1,48 @@
 import streamlit as st
 
-from backend.exceptions.multiple_faces_exception import MultipleFacesException
+from backend.face_recognition.face_recognition_engine import FaceRecognitionEngine
+from backend.exceptions.multi_faces_exception import MultiFacesException
 from backend.exceptions.no_faces_exception import NoFacesException
 
-from backend.face_recognition.face_recognition_engine import FaceRecognitionEngine
 
-from backend.utils.image_utils import convert_img_to_array
+fr_engine = FaceRecognitionEngine()
 
-engine = FaceRecognitionEngine()
+st.title("Módulo de Reconhecimento Facial")
 
-st.title("Módulo de Comparação de Imagens")
-
-st.header("Comparar duas imagens para verificar se são da mesma pessoa")
-
-# Permite upload de imagem
-image1 = st.file_uploader("Faça upload da primeira imagem", type=["jpg", "jpeg", "png"])
-image2 = st.file_uploader("Faça upload da segunda imagem", type=["jpg", "jpeg", "png"])
-
+st.header("Compare se 2 imagens são da mesma pessoa")
 
 col1, col2 = st.columns(2)
+
 with col1:
-    if image1:
-        st.image(image1, caption="Imagem 1", use_container_width=True)
+    imagem1 = st.file_uploader("Imagem 1")
+    if imagem1:
+        st.image(imagem1)
+
+
 with col2:
-    if image2:
-        st.image(image2, caption="Imagem 2", use_container_width=True)
+    imagem2 = st.file_uploader("Imagem 2")
+    if imagem2:
+        st.image(imagem2)
 
-if st.button("Comparar Imagens"):
-    if image1 is None or image2 is None:
-        st.error("Por favor, faça upload de ambas as imagens.")
-    else:
-        np_image_1 = convert_img_to_array(image1)
-        np_image_2 = convert_img_to_array(image2)
 
+button_pressed = st.button("Comparar pessoas")
+if button_pressed: ### Vai comparar as 2 pessoas
+    if imagem1 and imagem2:
         try:
-            result = engine.match_faces(np_image_1, np_image_2)
-        except (MultipleFacesException, NoFacesException) as e:
-            st.error(f"Erro: {e}")
+            same_person = fr_engine.match_faces(
+                imagem1, 
+                imagem2
+            )
+        except NoFacesException as e:
+            st.error(e.msg)
+            st.stop()
+        except MultiFacesException as e:
+            st.error(e.msg)
             st.stop()
 
-        if result:
-            st.success("As imagens são da mesma pessoa!")
+        if same_person:
+            st.success("As 2 imagens são da mesma pessoa")
         else:
-            st.error("As imagens não são da mesma pessoa.")
+            st.error("As 2 imagens não são da mesma pessoa")
+    else:
+        st.error("Selecione as 2 imagens")

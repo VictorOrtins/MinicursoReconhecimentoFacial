@@ -1,81 +1,58 @@
-import cv2
-import numpy as np
-
 from deepface import DeepFace
 from deepface.modules.verification import find_cosine_distance
 
-from backend.exceptions.multiple_faces_exception import MultipleFacesException
+from backend.utils.utils import convert_img_to_array
 from backend.exceptions.no_faces_exception import NoFacesException
-
+from backend.exceptions.multi_faces_exception import MultiFacesException
 
 class FaceRecognitionEngine:
-    def __init__(self, fr_model: str = 'Facenet', fd_model: str = 'centerface'):
-        self.face_recognition_model = fr_model
-        self.face_detection_model = fd_model
+    def __init__(self):
+        self.fr_model = 'Facenet' #Dlib, Facenet-512, GhostFaceNet
+        self.fd_model = 'centerface' #dlib, mtcnn, retinaface
         self.threshold = 0.4
 
-    def match_faces(self, img1_bgr: cv2.Mat, img2_bgr: cv2.Mat) -> bool:
-        """
-        Match two faces using the specified face recognition model.
-        :param img1: The first image containing a face.
-        :param img2: The second image containing a face.
-        :return: True if the faces match, False otherwise.
-        """
-        # Detect faces in both images
+    def match_faces(self, img1, img2):
+
+        img1 = convert_img_to_array(img1)
+        img2 = convert_img_to_array(img2)
+
+        template1 = self.__extract_template(img1, 1)
+        self.__check_single_face_detected(template1, 1)
+        template1 = template1[0]['embedding']
+
+        template2 = self.__extract_template(img2, 2)
+        self.__check_single_face_detected(template2, 2)
+        template2 = template2[0]['embedding']
+
+        same_person = self.__compare_templates(template1, 
+                                               template2)
+        
+        return same_person
+    
+    def __extract_template(self, img, num_img):# Retorna uma lista
         try:
-            detected_faces1 = self.__detect_faces(img1_bgr)
-        except ValueError as e:
-            raise NoFacesException("A imagem 1 deve conter exatamente uma face.") from e
-        try:
-            detected_faces2 = self.__detect_faces(img2_bgr)
-        except ValueError as e:
-            raise NoFacesException("A imagem 2 deve conter exatamente uma face.") from e
-        
-        if not self.__check_single_face_detected(detected_faces1):
-            raise MultipleFacesException("A imagem 1 deve conter exatamente uma face.")
-        
-        if not self.__check_single_face_detected(detected_faces2):
-            raise MultipleFacesException("A imagem 2 deve conter exatamente uma face.")
-        
-        face1 = np.array(detected_faces1[0]['face']*255)
-        face2 = np.array(detected_faces2[0]['face']*255)
+            template = DeepFace.represent(
+                img, 
+                model_name=self.fr_model,
+                detector_backend=self.fd_model
+            )
+        except ValueError: #Detectou nenhuma face
+            raise NoFacesException(f"""
+            A imagem {num_img} não possui nenhuma face""")
 
-        template1 = np.array(self.__extract_template(face1)[0]['embedding'])
-        template2 = np.array(self.__extract_template(face2)[0]['embedding'])
+        return template #LISTA
 
+    def __check_single_face_detected(self, templates, num_img):
+        qtd_templates = len(templates)
 
-        cosine_distance = find_cosine_distance(template1, template2)
-        if cosine_distance < self.threshold:
-            return True
+        if qtd_templates > 1:
+            raise MultiFacesException(f"""
+            A imagem {num_img} possui mais de uma face""")
 
-        return False
-    
-    def __detect_faces(self, img_bgr: cv2.Mat) -> list:
-        """
-        Detect faces in an image using the specified face detection model.
-        :param img: The input image in which to detect faces.
-        :return: A list of detected faces.
-        """
-        # Use DeepFace to detect faces
-        detected_faces = DeepFace.extract_faces(img_bgr, detector_backend=self.face_detection_model)
-        return detected_faces
-    
-    def __extract_template(self, img_bgr: cv2.Mat) -> list:
-        """
-        Extract face templates from an image using the specified face recognition model.
-        :param img: The input image from which to extract face templates.
-        :return: A list of extracted face templates.
-        """
-        # Use DeepFace to extract face templates
-        face_templates = DeepFace.represent(img_bgr, model_name=self.face_recognition_model, detector_backend='skip', enforce_detection=False)
-        return face_templates
-    
-    def __check_single_face_detected(self, detected_faces: list) -> bool:
-        """
-        Check if exactly one face is detected in the image.
-        :param detected_faces: The list of detected faces.
-        :return: True if exactly one face is detected, False otherwise.
-        """
-        return len(detected_faces) == 1
-    
+    def __compare_templates(self, template1, template2):
+        distance = find_cosine_distance(template1, template2)
 
+        if distance > self.threshold: #Muito distantes
+            return False #Templates de pessoas diferentes
+        else: # Templates próximos
+            return True #Templates da mesma pessoa
