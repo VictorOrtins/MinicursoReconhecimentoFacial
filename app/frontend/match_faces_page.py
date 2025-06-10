@@ -1,3 +1,9 @@
+"""
+Página Streamlit para comparação 1:1 entre duas faces.
+Permite o upload de duas imagens e exibe o resultado da comparação,
+indicando se são ou não a mesma pessoa.
+"""
+
 import streamlit as st
 
 from backend.face_recognition.face_recognition_engine import FaceRecognitionEngine
@@ -5,7 +11,7 @@ from backend.exceptions.multi_faces_exception import MultiFacesException
 from backend.exceptions.no_faces_exception import NoFacesException
 
 
-fr_engine = FaceRecognitionEngine()
+fr_engine = FaceRecognitionEngine()  # Instancia o engine de reconhecimento facial
 
 st.title("Módulo de Reconhecimento Facial")
 
@@ -17,16 +23,17 @@ with col1:
     imagem1 = st.file_uploader("Imagem 1")
     if imagem1:
         st.image(imagem1)
-
+        # Exibe a primeira imagem enviada pelo usuário
 
 with col2:
     imagem2 = st.file_uploader("Imagem 2")
     if imagem2:
         st.image(imagem2)
+        # Exibe a segunda imagem enviada pelo usuário
 
 
 button_pressed = st.button("Comparar pessoas")
-if button_pressed: ### Vai comparar as 2 pessoas
+if button_pressed:  # Vai comparar as 2 pessoas
     if imagem1 and imagem2:
         try:
             same_person = fr_engine.match_faces(
